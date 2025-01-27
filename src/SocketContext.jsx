@@ -27,7 +27,9 @@ export const SocketContextProvider = ({ children }) => {
       })
       .catch((error) => {
         console.error("Error accessing media devices:", error.message);
-        alert("Unable to access camera or microphone. Please check your device permissions.");
+        alert(
+          "Unable to access camera or microphone. Please check your device permissions."
+        );
       });
 
     if (me) {
@@ -55,7 +57,12 @@ export const SocketContextProvider = ({ children }) => {
     });
     connectionRef.current = peer;
     peer.on("signal", (data) => {
-      socket.emit("callUser", { userToCall: id, from: me._id, name: me.name, signal: data });
+      socket.emit("callUser", {
+        userToCall: id,
+        from: me._id,
+        name: me.name,
+        signal: data,
+      });
     });
     setCallingUserName(name);
 
@@ -78,6 +85,13 @@ export const SocketContextProvider = ({ children }) => {
       setTimeout(() => {
         setOnline(null);
       }, 5000);
+    });
+    socket.on("endCall", (message) => {
+      setCallEnded(true);
+      setCall({});
+      setCallAccepted(false);
+      setUserStream(null);
+      // console.log("endCall.message=", message);
     });
 
     return () => {
@@ -108,9 +122,14 @@ export const SocketContextProvider = ({ children }) => {
   };
 
   const leaveCall = () => {
+    // console.log("I AM LEAVING CALL");
+    socket.emit("endCall", {
+      from: me._id,
+      to: call.from,
+    });
     if (connectionRef.current) {
-      connectionRef.current.destroy();
       connectionRef.current.removeAllListeners();
+      connectionRef.current.destroy();
     }
     setCallEnded(true);
     setCall({});
