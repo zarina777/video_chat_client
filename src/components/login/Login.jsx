@@ -29,11 +29,7 @@ const Login = () => {
       .get(`/users/${selectedUserId}`) // Use ID in the query
       .then((response) => {
         setMe(response.data);
-        alert("User successfully logged in.");
-        return response.data;
-      })
-      .then((data) => {
-        socket.emit("authenticate", data._id);
+        socket.emit("authenticate", response.data._id);
       })
       .catch((error) => {
         console.error("There was an error making the request:", error);

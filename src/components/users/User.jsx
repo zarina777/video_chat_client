@@ -6,7 +6,7 @@ import api from "../../api";
 
 const Users = () => {
   const [users, setUsers] = useState([]); // State to hold the list of users
-  const { me, socket, stream, callUserFn, online } = useContext(SocketContext);
+  const { me, socket, stream, callUserFn, online, busyLine } = useContext(SocketContext);
   useEffect(() => {
     api
       .get(`/users`)
@@ -21,6 +21,7 @@ const Users = () => {
   return (
     <div className="bg-blue-gray-400 flex justify-center  flex-col w-full p-10 ">
       {online && <p className="text-2xl text-center p-3 bg-white">{online}</p>}
+      {busyLine && <p className="text-2xl text-center p-3 bg-yellow-400">{busyLine}</p>}
       <h1 className="text-2xl text-center p-3 text-white">Users</h1>
       <ul className="bg-white ">
         {users?.map((user) => {

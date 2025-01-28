@@ -4,7 +4,7 @@ import Peer from "simple-peer";
 import api from "./api";
 
 export const SocketContext = createContext();
-const socket = io(api.defaults.baseURL);
+const socket = io(api.defaults.baseURL, { autoConnect: true });
 
 export const SocketContextProvider = ({ children }) => {
   const [stream, setStream] = useState(null);
@@ -14,10 +14,11 @@ export const SocketContextProvider = ({ children }) => {
   const [name, setName] = useState(""); // Local user's name
   const [callAccepted, setCallAccepted] = useState(false); // Call acceptance state
   const [callEnded, setCallEnded] = useState(false); // Call end state
-  const socketRef = useRef(null); // Store the socket instance
   const connectionRef = useRef(null); // Reference to Peer connection
   const [online, setOnline] = useState(null); // State to hold the list of users
   const [callingUserName, setCallingUserName] = useState(null); // State to hold the calling user's name
+  const [busyLine, setBusyLine] = useState(undefined); // State to hold the calling user's name
+  let count = 0;
   useEffect(() => {
     // Get user's media devices
     navigator.mediaDevices
@@ -27,14 +28,12 @@ export const SocketContextProvider = ({ children }) => {
       })
       .catch((error) => {
         console.error("Error accessing media devices:", error.message);
-        alert(
-          "Unable to access camera or microphone. Please check your device permissions."
-        );
+        alert("Unable to access camera or microphone. Please check your device permissions.");
       });
 
     if (me) {
-      socket.on("callUser", ({ signal, from, name: callerName }) => {
-        setCall({ isReceivedCall: true, signal, from, name: callerName });
+      socket.on("callUser", ({ signal, from, name, userToCall }) => {
+        setCall({ isReceivedCall: true, signal, from, name, userToCall });
       });
     }
 
@@ -44,8 +43,11 @@ export const SocketContextProvider = ({ children }) => {
     };
   }, [me]);
 
+  useEffect(() => {
+    console.log(call);
+  }, [call]);
   // Calling function
-  const callUserFn = (id, name) => {
+  const callUserFn = async (id, name) => {
     if (!me) {
       alert("Please select a user.");
       return;
@@ -53,7 +55,7 @@ export const SocketContextProvider = ({ children }) => {
     const peer = new Peer({
       initiator: true,
       trickle: false,
-      stream: stream, // Attach local stream
+      stream: stream,
     });
     connectionRef.current = peer;
     peer.on("signal", (data) => {
@@ -86,31 +88,40 @@ export const SocketContextProvider = ({ children }) => {
         setOnline(null);
       }, 5000);
     });
+    socket.on("busyUser", (res) => {
+      setBusyLine(res);
+      setTimeout(() => {
+        setBusyLine(null);
+      }, 5000);
+    });
     socket.on("endCall", (message) => {
       setCallEnded(true);
       setCall({});
       setCallAccepted(false);
       setUserStream(null);
-      // console.log("endCall.message=", message);
     });
-
     return () => {
       socket.off("callUser");
       socket.off("callAccepted");
       socket.off("UserIsOnline");
       socket.off("UserNotOnline");
+      socket.off("busyUser");
     };
   };
 
   const answerCall = (id) => {
     setCallAccepted(true);
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream: stream,
-    });
+    setCallEnded(false);
+    let peer;
+    if (stream) {
+      peer = new Peer({
+        initiator: false,
+        trickle: false,
+        stream: stream,
+      });
+    }
     peer.on("signal", (data) => {
-      socket.emit("answerToCall", { signal: data, to: call.from });
+      socket.emit("answerToCall", { signal: data, to: call.from, from: me._id });
     });
 
     peer.on("stream", (remoteStream) => {
@@ -122,18 +133,25 @@ export const SocketContextProvider = ({ children }) => {
   };
 
   const leaveCall = () => {
-    // console.log("I AM LEAVING CALL");
+    console.log(call);
     socket.emit("endCall", {
+      to: call?.from,
       from: me._id,
-      to: call.from,
     });
+
+    // Clean up the Peer connection
     if (connectionRef.current) {
       connectionRef.current.removeAllListeners();
       connectionRef.current.destroy();
     }
+    if (stream) {
+      setStream(null);
+    }
+    // Reset state related to the call
     setCallEnded(true);
     setCall({});
     setCallAccepted(false);
+    setStream(null);
     setUserStream(null);
   };
 
@@ -160,6 +178,7 @@ export const SocketContextProvider = ({ children }) => {
         online,
         denyCall,
         callingUserName,
+        busyLine,
       }}
     >
       {children}
