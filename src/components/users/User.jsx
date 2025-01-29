@@ -6,7 +6,7 @@ import api from "../../api";
 
 const Users = () => {
   const [users, setUsers] = useState([]); // State to hold the list of users
-  const { me, socket, stream, callUserFn, online, busyLine } = useContext(SocketContext);
+  const { me, socket, stream, callUserFn, online, busyLine, setCallID } = useContext(SocketContext);
   useEffect(() => {
     api
       .get(`/users`)
@@ -31,7 +31,10 @@ const Users = () => {
                 <h2 className="text-blue-900 w-full text-lg "> {user.name}</h2>
                 <span className="text-blue-gray-800 mr-2">ID:{user._id}</span>
                 <span
-                  onClick={() => callUserFn(user._id, user.name)}
+                  onClick={() => {
+                    setCallID(user._id);
+                    callUserFn(user._id, user.name);
+                  }}
                   className="p-4 rounded-full bg-blue-700 flex justify-center items-center cursor-pointer hover:-translate-y-2"
                 >
                   <IoCallSharp className="text-2xl text-gray-200" />

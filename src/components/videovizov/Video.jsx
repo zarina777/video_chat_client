@@ -1,30 +1,45 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { SocketContext } from "../../SocketContext";
 import { MdCallEnd, MdMic, MdMicOff, MdVideocam, MdVideocamOff } from "react-icons/md";
+import UserVideo from "./userVideo";
 
 const Video = () => {
-  const { stream, me, userStream, call, callAccepted, leaveCall, answerCall, denyCall, callEnded, callingUserName } = useContext(SocketContext);
+  const {
+    stream,
+    me,
+    userStream,
+    call,
+    callAccepted,
+    leaveCall,
+    answerCall,
+    denyCall,
+    callEnded,
+    callingUserName,
+    isCameraOn,
+    isMicOn,
+    toggleCamera,
+    toggleMic,
+  } = useContext(SocketContext);
   const myVideo = useRef();
   const userVideo = useRef();
 
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
-
   // Toggles camera on/off
-  const toggleCamera = async () => {
-    const videoTracks = stream.getTracks().filter((track) => track.kind === "video");
-    const isVideoOn = videoTracks[0].enabled;
-    videoTracks[0].enabled = !isVideoOn;
-    setIsCameraOn(!isVideoOn);
-  };
+  // const toggleCamera = async () => {
+  //   const videoTracks = stream.getTracks().filter((track) => track.kind === "video");
+  //   const isVideoOn = videoTracks[0].enabled;
+  //   videoTracks[0].enabled = !isVideoOn;
+  //   setIsCameraOn(!isVideoOn);
+  //   console.log("Toggling camera on");
+  // };
 
   // Toggles microphone on/off
-  const toggleMic = async () => {
-    const audioTracks = stream.getTracks().filter((track) => track.kind === "audio");
-    const isMicOn = audioTracks[0].enabled;
-    audioTracks[0].enabled = !isMicOn;
-    setIsMicOn(!isMicOn);
-  };
+  // const toggleMic = async () => {
+  //   const audioTracks = stream.getTracks().filter((track) => track.kind === "audio");
+  //   const isMicOn = audioTracks[0].enabled;
+  //   audioTracks[0].enabled = !isMicOn;
+  //   setIsMicOn(!isMicOn);
+  //   console.log("Toggling microphone on");
+  // };
 
   useEffect(() => {
     if (stream) {
@@ -59,12 +74,7 @@ const Video = () => {
           <video ref={myVideo} playsInline className="w-full bg-red-300 rounded-md" muted autoPlay />
         </div>
         {/* User Video */}
-        {!callEnded && callAccepted && call && (
-          <div className="w-full bg-gray-100 rounded-lg p-2 mt-5">
-            <h2 className="text-center font-semibold">{call?.name || callingUserName}</h2>
-            <video ref={userVideo} playsInline className="bg-blue-gray-500 w-full rounded-md" autoPlay />
-          </div>
-        )}
+        {!callEnded && callAccepted && <UserVideo call={call} callingUserName={callingUserName} ref={userVideo} />}
       </div>
 
       <div className="flex items-center gap-4 mt-6 -translate-y-4">
