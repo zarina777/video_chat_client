@@ -10,7 +10,7 @@ export const SocketContextProvider = ({ children }) => {
   const [stream, setStream] = useState(null);
   const [userStream, setUserStream] = useState(null);
   const [call, setCall] = useState({}); // Call details
-  const [callID, setCallID] = useState({}); // Call details
+  const [callID, setCallID] = useState(""); // Call details
   const [me, setMe] = useState(null); // User's socket ID
   const [name, setName] = useState(""); // Local user's name
   const [callAccepted, setCallAccepted] = useState(false); // Call acceptance state
@@ -21,11 +21,11 @@ export const SocketContextProvider = ({ children }) => {
   const [busyLine, setBusyLine] = useState(undefined); // State to hold the calling user's name
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [callOnWay, setCallOnWay] = useState(false);
+  const [callDenied, setCallDenied] = useState(false);
 
   let [number, setNumber] = useState(0);
-  useEffect(() => {
-    console.log(number);
-  }, [number]);
+
   useEffect(() => {
     // Get user's media devices
     navigator.mediaDevices
@@ -99,8 +99,8 @@ export const SocketContextProvider = ({ children }) => {
         name: me.name,
         signal: data,
       });
+      setCallOnWay(true);
     });
-
     peer.on("stream", (remoteStream) => {
       setUserStream(remoteStream);
       setNumber((prev) => prev + 1);
@@ -110,30 +110,37 @@ export const SocketContextProvider = ({ children }) => {
       setCallEnded(false);
       setCallAccepted(true);
       peer.signal(signal);
+      setCallOnWay(false);
     });
-    //  to there
+    socket.on("callDenied", () => {
+      setCallEnded(true);
+      setCallAccepted(false);
+      setCallOnWay(false);
+      setCallDenied(true);
+      console.log(callDenied);
+      setTimeout(() => {
+        setCallDenied(false);
+      }, 3000);
+    });
 
     setCallingUserName(name);
-    socket.on("UserIsOnline", (res) => {
+    socket.once("UserNotOnline", (res) => {
       setOnline(res);
+      setCallOnWay(false);
       setTimeout(() => {
         setOnline(null);
       }, 5000);
     });
-    socket.on("UserNotOnline", (res) => {
-      setOnline(res);
-      setTimeout(() => {
-        setOnline(null);
-      }, 5000);
-    });
-    socket.on("busyUser", (res) => {
+    socket.once("busyUser", (res) => {
       setBusyLine(res);
+      setCallOnWay(false);
       setTimeout(() => {
         setBusyLine(null);
-      }, 5000);
+      }, 1500);
     });
 
     return () => {
+      socket.off("callDenied");
       socket.off("callUser");
       socket.off("callAccepted");
       socket.off("UserIsOnline");
@@ -186,13 +193,21 @@ export const SocketContextProvider = ({ children }) => {
     setCallAccepted(false);
     setIsCameraOn(true);
     setIsMicOn(true);
-    // setStream(null);
 
     setUserStream(null);
   };
 
   const denyCall = () => {
+    console.log({
+      to: callID,
+      from: me._id,
+    });
+    socket.emit("denyCall", {
+      to: callID || call.from,
+      from: me._id,
+    });
     setCall({ ...call, isReceivedCall: false });
+    setCallAccepted(false);
   };
   const toggleCamera = async () => {
     if (!stream) return;
@@ -258,6 +273,8 @@ export const SocketContextProvider = ({ children }) => {
         number,
         toggleCamera,
         toggleMic,
+        callOnWay,
+        callDenied,
       }}
     >
       {children}
