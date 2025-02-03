@@ -206,7 +206,7 @@ export const SocketContextProvider = ({ children }) => {
       to: callID || call.from,
       from: me._id,
     });
-    setCall({ ...call, isReceivedCall: false });
+    setCall({});
     setCallAccepted(false);
   };
   const toggleCamera = async () => {
