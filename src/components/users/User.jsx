@@ -22,7 +22,7 @@ const Users = () => {
     <div className="bg-blue-gray-400 flex justify-center  flex-col w-full p-10 ">
       {online && <p className="text-2xl text-center p-3 bg-white">{online}</p>}
       {busyLine && <p className="text-2xl text-center p-3 bg-yellow-400">{busyLine}</p>}
-      {callOnWay && <p>Wait for response...</p>}
+      {callOnWay && <p className="text-2xl text-center p-3 text-white bg-blue-400">Wait for response...</p>}
       <h1 className="text-2xl text-center p-3 text-white">Users</h1>
       <ul className="bg-white ">
         {users?.map((user) => {

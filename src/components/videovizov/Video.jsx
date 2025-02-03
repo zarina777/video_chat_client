@@ -55,7 +55,7 @@ const Video = () => {
   }, [userStream]);
   return (
     <div className="h-full w-full flex justify-center items-center flex-col bg-gray-900">
-      {!!callDenied && <h2 className="text-white">Call denied</h2>}
+      {!!callDenied && <h2 className="text-2xl text-center p-3 text-white bg-red-400">Call denied</h2>}
       <div className="videos flex flex-col gap-5 justify-center w-full px-10">
         {call?.isReceivedCall && !callAccepted && (
           <div className="flex items-center gap-2 justify-between mb-10 w-full border rounded border-black p-3">
